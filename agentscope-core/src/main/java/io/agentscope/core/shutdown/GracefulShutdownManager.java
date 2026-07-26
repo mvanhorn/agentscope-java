@@ -116,6 +116,19 @@ public final class GracefulShutdownManager {
     }
 
     /**
+     * Unregister the {@link ShutdownStateSaver} for the given agent.
+     *
+     * <p>Requests registered before this call retain the saver captured in their
+     * {@link ActiveRequestContext}; only later requests are affected.
+     */
+    public void unbindStateSaver(Agent agent) {
+        if (agent == null) {
+            return;
+        }
+        stateSavers.remove(agent.getAgentId());
+    }
+
+    /**
      * Check whether the agent was previously interrupted by shutdown, and clear the flag.
      *
      * <p>Called from {@link GracefulShutdownMiddleware} on each {@code onAgent} to detect

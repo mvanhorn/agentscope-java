@@ -37,6 +37,7 @@ import io.agentscope.core.state.AgentStateStore;
 import io.agentscope.core.state.InMemoryAgentStateStore;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -354,6 +355,34 @@ class GracefulShutdownTest {
 
             assertDoesNotThrow(() -> manager.bindStateSaver(null, s -> {}));
             assertDoesNotThrow(() -> manager.bindStateSaver(agent, null));
+        }
+
+        @Test
+        @DisplayName("unbindStateSaver affects later requests but preserves captured savers")
+        void unbindStateSaverPreservesCapturedSaver() {
+            TestableAgent agent = createTestAgent("agent-1");
+            AtomicInteger saveCount = new AtomicInteger();
+            manager.bindStateSaver(agent, state -> saveCount.incrementAndGet());
+
+            String requestBeforeUnbind = manager.registerRequest(agent);
+            manager.unbindStateSaver(agent);
+            String requestAfterUnbind = manager.registerRequest(agent);
+
+            manager.saveOnInterruptObserved(requestBeforeUnbind);
+            manager.saveOnInterruptObserved(requestAfterUnbind);
+
+            assertEquals(1, saveCount.get());
+        }
+
+        @Test
+        @DisplayName("unbindStateSaver with null or an already unbound agent is no-op")
+        void unbindStateSaverIsNullSafeAndIdempotent() {
+            TestableAgent agent = createTestAgent("agent-1");
+            manager.bindStateSaver(agent, state -> {});
+
+            assertDoesNotThrow(() -> manager.unbindStateSaver(null));
+            assertDoesNotThrow(() -> manager.unbindStateSaver(agent));
+            assertDoesNotThrow(() -> manager.unbindStateSaver(agent));
         }
 
         @Test

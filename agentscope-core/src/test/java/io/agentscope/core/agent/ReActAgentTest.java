@@ -15,6 +15,7 @@
  */
 package io.agentscope.core.agent;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -40,6 +41,9 @@ import io.agentscope.core.message.ToolResultBlock;
 import io.agentscope.core.message.ToolUseBlock;
 import io.agentscope.core.model.ChatResponse;
 import io.agentscope.core.model.ChatUsage;
+import io.agentscope.core.shutdown.GracefulShutdownManager;
+import io.agentscope.core.state.InMemoryAgentStateStore;
+import io.agentscope.core.state.State;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.core.util.JsonUtils;
 import java.time.Duration;
@@ -106,6 +110,60 @@ class ReActAgentTest {
         // Verify memory is initially empty
         assertTrue(
                 agent.getAgentState().getContext().isEmpty(), "Memory should be empty initially");
+    }
+
+    @Test
+    @DisplayName("Closing a stateful agent unbinds its shutdown state saver")
+    void testCloseUnbindsShutdownStateSaver() {
+        GracefulShutdownManager manager = GracefulShutdownManager.getInstance();
+        CountingAgentStateStore stateStore = new CountingAgentStateStore();
+        ReActAgent statefulAgent =
+                ReActAgent.builder()
+                        .name("stateful-close")
+                        .sysPrompt(TestConstants.DEFAULT_SYS_PROMPT)
+                        .model(mockModel)
+                        .stateStore(stateStore)
+                        .build();
+
+        statefulAgent.close();
+        String requestId = manager.registerRequest(statefulAgent);
+        manager.saveOnInterruptObserved(requestId);
+        manager.unregisterRequest(requestId);
+
+        assertEquals(0, stateStore.getSaveCount());
+        assertDoesNotThrow(statefulAgent::close);
+    }
+
+    @Test
+    @DisplayName("Closing preserves the saver captured by an already registered request")
+    void testClosePreservesCapturedShutdownStateSaver() {
+        GracefulShutdownManager manager = GracefulShutdownManager.getInstance();
+        CountingAgentStateStore stateStore = new CountingAgentStateStore();
+        ReActAgent statefulAgent =
+                ReActAgent.builder()
+                        .name("stateful-in-flight")
+                        .sysPrompt(TestConstants.DEFAULT_SYS_PROMPT)
+                        .model(mockModel)
+                        .stateStore(stateStore)
+                        .build();
+
+        String requestBeforeClose = manager.registerRequest(statefulAgent);
+        statefulAgent.close();
+        String requestAfterClose = manager.registerRequest(statefulAgent);
+
+        manager.saveOnInterruptObserved(requestBeforeClose);
+        manager.saveOnInterruptObserved(requestAfterClose);
+        manager.unregisterRequest(requestBeforeClose);
+        manager.unregisterRequest(requestAfterClose);
+
+        assertEquals(1, stateStore.getSaveCount());
+    }
+
+    @Test
+    @DisplayName("Closing an agent without a state store is idempotent")
+    void testCloseWithoutStateStoreIsIdempotent() {
+        assertDoesNotThrow(agent::close);
+        assertDoesNotThrow(agent::close);
     }
 
     @Test
@@ -1071,5 +1129,20 @@ class ReActAgentTest {
                                         .build()))
                 .usage(new ChatUsage(8, 15, 23))
                 .build();
+    }
+
+    private static class CountingAgentStateStore extends InMemoryAgentStateStore {
+
+        private int saveCount;
+
+        @Override
+        public void save(String userId, String sessionId, String key, State value) {
+            saveCount++;
+            super.save(userId, sessionId, key, value);
+        }
+
+        int getSaveCount() {
+            return saveCount;
+        }
     }
 }

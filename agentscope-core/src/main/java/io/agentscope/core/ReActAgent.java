@@ -201,6 +201,11 @@ import reactor.core.scheduler.Schedulers;
  * one agent instance per request via a factory method. {@link io.agentscope.core.model.Model},
  * {@link io.agentscope.core.tool.Toolkit} (as a template — {@code build()} deep-copies it), and
  * {@link io.agentscope.core.state.AgentStateStore} are all safe to share across instances.
+ *
+ * <p><b>Lifecycle:</b> An agent configured with an {@link io.agentscope.core.state.AgentStateStore}
+ * registers a shutdown state saver. Applications that create per-request agents must close each
+ * instance when the request completes, preferably with try-with-resources, to unregister that
+ * saver. Closing the agent does not close the shared state store.
  */
 @SuppressWarnings("deprecation")
 public class ReActAgent extends AgentBase implements AutoCloseable {
@@ -3841,8 +3846,7 @@ public class ReActAgent extends AgentBase implements AutoCloseable {
 
     @Override
     public void close() {
-        // No-op for the core ReActAgent. Subclasses / wrappers (HarnessAgent) may release
-        // additional resources here.
+        shutdownManager.unbindStateSaver(this);
     }
 
     // ==================== Builder ====================
