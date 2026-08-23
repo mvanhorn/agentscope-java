@@ -4,7 +4,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <meta property="article:modified_time" content="2026-06-02T16:19:40+00:00" /><link rel="index" title="Index" href="../../../../genindex.html"><link rel="search" title="Search" href="../../../../search.html"><link rel="next" title="子 Agent 流式输出" href="streaming.html"><link rel="prev" title="技能（Skill）" href="skill.html">
+    <meta property="article:modified_time" content="2026-08-18T03:57:51+00:00" /><link rel="index" title="Index" href="../../../../genindex.html"><link rel="search" title="Search" href="../../../../search.html"><link rel="next" title="子 Agent 流式输出" href="streaming.html"><link rel="prev" title="技能（Skill）" href="skill.html">
         <link rel="canonical" href="https://java.agentscope.io/v1/zh/docs/harness/subagent.html">
         <link rel="prefetch" href="../../../../_static/logo.svg" as="image">
 
@@ -995,7 +995,8 @@
 <li><p>内置 <code class="docutils literal notranslate"><span class="pre">general-purpose</span></code></p></li>
 <li><p>编程声明：<code class="docutils literal notranslate"><span class="pre">builder.subagent(SubagentDeclaration)</span></code></p></li>
 <li><p>文件声明：<code class="docutils literal notranslate"><span class="pre">workspace/subagents/*.md</span></code>（<code class="docutils literal notranslate"><span class="pre">AgentSpecLoader</span></code> 非递归加载）</p></li>
-<li><p>自定义工厂：<code class="docutils literal notranslate"><span class="pre">builder.subagentFactory(name,</span> <span class="pre">factory)</span></code></p></li>
+<li><p>自定义工厂：<code class="docutils literal notranslate"><span class="pre">builder.subagentFactory(name,</span> <span class="pre">factory)</span></code> 或
+<code class="docutils literal notranslate"><span class="pre">builder.subagentFactory(name,</span> <span class="pre">description,</span> <span class="pre">factory)</span></code>，后者可为编排器提供有意义的描述而非仅有名称（省略或为空白时回退为名称）</p></li>
 </ol>
 </section>
 <hr class="docutils" />
@@ -1097,23 +1098,23 @@ maxIters: 8                    # 可选，默认 10
 <section id="id5">
 <h2>编程式配置<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h2>
 <div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">HarnessAgent</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
-<span class="w">    </span><span class="p">.</span><span class="na">name</span><span class="p">(</span><span class="s">&quot;orchestrator&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="na">name</span><span class="p">(</span><span class="s">"orchestrator"</span><span class="p">)</span>
 <span class="w">    </span><span class="p">.</span><span class="na">model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 <span class="w">    </span><span class="p">.</span><span class="na">workspace</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>
 <span class="w">    </span><span class="p">.</span><span class="na">subagent</span><span class="p">(</span><span class="n">SubagentDeclaration</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
-<span class="w">        </span><span class="p">.</span><span class="na">name</span><span class="p">(</span><span class="s">&quot;reviewer&quot;</span><span class="p">)</span>
-<span class="w">        </span><span class="p">.</span><span class="na">description</span><span class="p">(</span><span class="s">&quot;代码审查专家&quot;</span><span class="p">)</span>
-<span class="w">        </span><span class="p">.</span><span class="na">workspace</span><span class="p">(</span><span class="n">Path</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;./defs/reviewer&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="p">.</span><span class="na">name</span><span class="p">(</span><span class="s">"reviewer"</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="na">description</span><span class="p">(</span><span class="s">"代码审查专家"</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="na">workspace</span><span class="p">(</span><span class="n">Path</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"./defs/reviewer"</span><span class="p">))</span>
 <span class="w">        </span><span class="p">.</span><span class="na">workspaceMode</span><span class="p">(</span><span class="n">WorkspaceMode</span><span class="p">.</span><span class="na">ISOLATED</span><span class="p">)</span>
-<span class="w">        </span><span class="p">.</span><span class="na">model</span><span class="p">(</span><span class="s">&quot;qwen3-max&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="na">model</span><span class="p">(</span><span class="s">"qwen3-max"</span><span class="p">)</span>
 <span class="w">        </span><span class="p">.</span><span class="na">maxIters</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
-<span class="w">        </span><span class="p">.</span><span class="na">tools</span><span class="p">(</span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;read_file&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;grep_files&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="p">.</span><span class="na">tools</span><span class="p">(</span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"read_file"</span><span class="p">,</span><span class="w"> </span><span class="s">"grep_files"</span><span class="p">))</span>
 <span class="w">        </span><span class="p">.</span><span class="na">build</span><span class="p">())</span>
 <span class="w">    </span><span class="p">.</span><span class="na">subagent</span><span class="p">(</span><span class="n">SubagentDeclaration</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
-<span class="w">        </span><span class="p">.</span><span class="na">name</span><span class="p">(</span><span class="s">&quot;remote-researcher&quot;</span><span class="p">)</span>
-<span class="w">        </span><span class="p">.</span><span class="na">description</span><span class="p">(</span><span class="s">&quot;远端调研子 agent&quot;</span><span class="p">)</span>
-<span class="w">        </span><span class="p">.</span><span class="na">url</span><span class="p">(</span><span class="s">&quot;http://agent-task-server:8080&quot;</span><span class="p">)</span>
-<span class="w">        </span><span class="p">.</span><span class="na">headers</span><span class="p">(</span><span class="n">Map</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;Authorization&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Bearer xxx&quot;</span><span class="p">))</span>
+<span class="w">        </span><span class="p">.</span><span class="na">name</span><span class="p">(</span><span class="s">"remote-researcher"</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="na">description</span><span class="p">(</span><span class="s">"远端调研子 agent"</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="na">url</span><span class="p">(</span><span class="s">"http://agent-task-server:8080"</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="na">headers</span><span class="p">(</span><span class="n">Map</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"Authorization"</span><span class="p">,</span><span class="w"> </span><span class="s">"Bearer xxx"</span><span class="p">))</span>
 <span class="w">        </span><span class="p">.</span><span class="na">build</span><span class="p">())</span>
 <span class="w">    </span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
 </pre></div>
@@ -1335,7 +1336,7 @@ maxIters: 8                    # 可选，默认 10
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-06-02</div>
+              Last updated on 2026-08-18</div>
           </div>
           <div class="right-details">
             <div class="icons">
